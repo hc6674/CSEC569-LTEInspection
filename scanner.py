@@ -68,6 +68,7 @@ def run_scanner():
 
 
 def main():
+    # TODO - Allow to select range of earfcn to look for to speed scanning 
     output = run_scanner()
     towers = parse_output(output)
     while True:
