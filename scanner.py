@@ -4,7 +4,8 @@ import time
 # TODO - SPECIFY BAND TOWER FOUND IN
 
 DEVICE_ARGS = "id=2"
-BANDS=[12]
+# BANDS=[12]
+BANDS=[2,4,12,13,17,66,71]
 
 # Modift the srsenb.conf file with the newly selected params
 def modify_conf():
@@ -18,20 +19,27 @@ def parse_output(output):
     # Find any towers
     for line in output:
         if "Found CELL" in line and "EARFCN" in line:
-            towers.append(line)
+            # pull ID and check if greater than 2
+            line_id = line.split(" ")
+            id = line_id[5][6:]
+            id = int(id.strip(","))
+            if id > 2:
+                towers.append(line)
 
     return(towers)
 
-# Detect what the parameters for the selected tower are
-def detect_cell_params():
-    pass
+
+# Detect if there are any UEs associated with chosen tower
+# Returns True/False
+def detect_ue(tower):
+    return(False)
 
 
 def select_tower(towers):
     print("\nChoose Cell Tower to Target\n")
     for i in range(0, len(towers)):
         tower_specs = towers[i].split(" ")
-        print(f"    {i+1}) {tower_specs[2]} {tower_specs[3]}, {tower_specs[4]}, {tower_specs[5]}")
+        print(f"    {i+1}) {tower_specs[2]} {tower_specs[3]} {tower_specs[4]} {tower_specs[5]} {tower_specs[11]}")
 
     selection_index = input("\nTower Number : ")
     index = int(selection_index) - 1
@@ -62,9 +70,17 @@ def run_scanner():
 def main():
     output = run_scanner()
     towers = parse_output(output)
-    selected_tower = select_tower(towers)
-    print(selected_tower)
-    # Write changes to srsenb
+    while True:
+        selected_tower = select_tower(towers)
+        print(selected_tower)
+        if detect_ue(selected_tower):
+            break
+        else:
+            print("No UEs detected, select new tower")
+    # end
+
+    # Sniff SIB information
+    # Apply to enb.conf and run srsenb & srsepc
 
 if __name__ == "__main__":
     main()
