@@ -1,15 +1,25 @@
 import subprocess
 import time
+import signal_strength
+import lte_nr_frequency as lte_freq
+
 
 # TODO - SPECIFY BAND TOWER FOUND IN
 
 DEVICE_ARGS = "id=2"
-# BANDS=[12]
-BANDS=[2,4,12,13,17,66,71]
+LTESNIFFER_PATH = "/home/brayden/Clones/LTESniffer/build/src/"
+BANDS=[12]
+RSSI_CUTOFF = -40
+# BANDS=[2,4,12,13,17,66,71]
 
 # Modift the srsenb.conf file with the newly selected params
 def modify_conf():
     pass
+
+
+def calculate_ul(dl_earfcn):
+    freq_dict = lte_freq.get_lte_freq(dl_earfcn)
+    return(freq_dict['ul_freq'])
 
 
 # Take the stdout from the cell_search binary and return list of towers detected
@@ -32,7 +42,19 @@ def parse_output(output):
 # Detect if there are any UEs associated with chosen tower
 # Returns True/False
 def detect_ue(tower):
-    return(False)
+    # Get EARFCN
+    tower = tower.split(" ")
+    dl_earfcn = tower[4].strip(",")[7:]
+    # Calcuate Uplink
+    freq = calculate_ul(int(dl_earfcn))
+    # Calucate RSSI
+    print("===== CALCULATING RSSI =====")
+    rssi = signal_strength.signal_strength(freq)
+    print(f"\nRSSI : {rssi:.4f}")
+    if rssi > RSSI_CUTOFF:
+        return(True)
+    else:
+        return(False)
 
 
 def select_tower(towers):
@@ -79,8 +101,8 @@ def main():
         else:
             print("No UEs detected, select new tower")
     # end
-
     # Sniff SIB information
+    print("===== Sniffing SIB information =====")
     # Apply to enb.conf and run srsenb & srsepc
 
 if __name__ == "__main__":
