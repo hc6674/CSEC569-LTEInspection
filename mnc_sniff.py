@@ -27,7 +27,7 @@ def find_mnc(path, freq):
     exec_path = ''.join([path, "LTESniffer"])
     print("Recording LTE Packets...")
     try:
-        result = subprocess.run([exec_path , '-A', '2', '-W', '4', '-f', str(freq), '-C', '-m', '0', '-a', "num_recv_frames=512,id=2"], timeout=20, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)    
+        result = subprocess.run([exec_path , '-A', '2', '-W', '4', '-f', str(freq), '-C', '-m', '0', '-a', "num_recv_frames=512,id=2"], timeout=60, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)    
     except:
         print("Recording Finished...")
 

