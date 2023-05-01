@@ -1,0 +1,1 @@
+sudo ./LTESniffer -A 1 -W 4 -f 739e6 -C -m 0 -a "num_recv_frames=512"
