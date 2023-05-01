@@ -1,12 +1,26 @@
-import pyshark
+from scapy.all import *
 import subprocess
 import os
 
 def parse_pcap():
-    capture = pyshark.FileCapture('ltesniffer_dl_mode.pcap')
-    for packet in capture:
-        print(packet)
+    file = "ltesniffer_dl_mode.pcap"
+    # Need to do lte DLT_USER setup in wireshark - See LTESniffer Help
+    result = subprocess.run(["tshark", "-Tfields", "-r" , "ltesniffer_dl_mode.pcap", "-Y", "lte-rrc.c1 == 1", "-e", "lte-rrc.MCC_MNC_Digit"], stdout=subprocess.PIPE)
+    
+    # Read Results
+    byte_output = result.stdout
+    output = byte_output.decode("utf-8")
 
+    # Grab MNC & MCC
+    try:
+        output = output.split(",")
+        mcc = output[0] + output[1] + output[2]
+        mnc = output[3] + output[4] + output[5]       
+        # print(f"MNC : {mnc}\nMCC : {mcc}")
+        return(mnc, mcc) 
+    except:
+        print("Error finding SIB packets")
+        return(0, 0)
 
 def find_mnc(path, freq):
     # Run with the parameters
@@ -23,8 +37,8 @@ def find_mnc(path, freq):
     os.remove("api_collector.pcap")
 
     mnc, mcc = parse_pcap()
-    print(f"MNC : {mnc} MCC : {mcc}")
+    # print(f"MNC : {mnc} MCC : {mcc}")
     return(mnc, mcc)
 
 
-find_mnc("/home/brayden/Clones/LTESniffer/build/src/", 739e6)
+# find_mnc("/home/brayden/Clones/LTESniffer/build/src/", 739e6)

@@ -1,6 +1,7 @@
 import subprocess
 import time
 import signal_strength
+import mnc_sniff
 import lte_nr_frequency as lte_freq
 
 
@@ -15,6 +16,13 @@ RSSI_CUTOFF = -40
 # Modift the srsenb.conf file with the newly selected params
 def modify_conf():
     pass
+
+
+def sniff_sib(tower):
+    tower = tower.split(" ")
+    freq = tower[2] + "e6"
+    mnc, mcc = mnc_sniff.find_mnc(freq)
+    return(mnc, mcc)
 
 
 def calculate_ul(dl_earfcn):
@@ -103,7 +111,9 @@ def main():
     # end
     # Sniff SIB information
     print("===== Sniffing SIB information =====")
-    # Apply to enb.conf and run srsenb & srsepc
+    mnc, mcc = sniff_sib(selected_tower)
+    print(f"MNC : {mnc}\nMCC : {mcc}")
+
 
 if __name__ == "__main__":
     main()
